@@ -1,0 +1,203 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Mes apps</title>
+<link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🌙</text></svg>">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;700;800&display=swap" rel="stylesheet">
+<style>
+:root{
+  --bg:#f3f2fa; --ink:#1d1b2e; --muted:#6b6886; --card:rgba(255,255,255,.72);
+  --border:rgba(30,25,70,.08); --pill:rgba(91,63,209,.1); --accent:#5b3fd1;
+  --glow1:#c9b8ff; --glow2:#ffc6e3; --glow3:#b5e4ff;
+  box-sizing:border-box;
+  padding-top:env(safe-area-inset-top,0px);
+  padding-bottom:env(safe-area-inset-bottom,0px);
+}
+@media (prefers-color-scheme:dark){
+  :root:not([data-theme="light"]){
+    --bg:#0f0e1c; --ink:#eeecff; --muted:#9b97bd; --card:rgba(32,29,58,.6);
+    --border:rgba(255,255,255,.07); --pill:rgba(159,140,255,.14); --accent:#a796ff;
+    --glow1:#3b2a8a; --glow2:#5a1f4d; --glow3:#123a5a;
+  }
+}
+:root[data-theme="dark"]{
+  --bg:#0f0e1c; --ink:#eeecff; --muted:#9b97bd; --card:rgba(32,29,58,.6);
+  --border:rgba(255,255,255,.07); --pill:rgba(159,140,255,.14); --accent:#a796ff;
+  --glow1:#3b2a8a; --glow2:#5a1f4d; --glow3:#123a5a;
+}
+*,*::before,*::after{box-sizing:inherit}
+html,body{margin:0;min-height:100%}
+body{
+  background:var(--bg); color:var(--ink);
+  font:400 1rem/1.55 Manrope,system-ui,-apple-system,"Segoe UI",sans-serif;
+  -webkit-font-smoothing:antialiased;
+}
+body::before{
+  content:"";position:fixed;inset:0;z-index:-1;pointer-events:none;
+  background:
+    radial-gradient(40rem 30rem at 10% -10%,var(--glow1),transparent 60%),
+    radial-gradient(35rem 28rem at 100% 0%,var(--glow2),transparent 60%),
+    radial-gradient(40rem 30rem at 50% 110%,var(--glow3),transparent 60%);
+  opacity:.7;
+}
+main{max-width:64rem;margin:0 auto;padding:2.5rem 1.25rem 4rem}
+header{display:flex;align-items:center;gap:.75rem;margin-bottom:2rem}
+.logo{
+  width:2.5rem;height:2.5rem;border-radius:.8rem;display:grid;place-items:center;font-size:1.3rem;
+  background:var(--card);border:1px solid var(--border);backdrop-filter:blur(12px);
+}
+header h1{font-size:1.15rem;font-weight:800;margin:0;letter-spacing:-.01em}
+header p{margin:0;color:var(--muted);font-size:.88rem}
+.grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(17rem,1fr));gap:1rem;list-style:none;margin:0;padding:0}
+.card{
+  background:var(--card);border:1px solid var(--border);border-radius:1.4rem;
+  padding:1.25rem;display:flex;flex-direction:column;gap:.9rem;
+  backdrop-filter:blur(18px);-webkit-backdrop-filter:blur(18px);
+}
+.top{display:flex;gap:.9rem;align-items:center}
+.icon{
+  flex:none;width:3.5rem;height:3.5rem;border-radius:1rem;display:grid;place-items:center;
+  color:#fff;font-weight:800;font-size:1.5rem;overflow:hidden;
+  box-shadow:0 8px 20px -8px var(--shadow,rgba(0,0,0,.3));
+}
+.icon img{width:100%;height:100%;object-fit:cover}
+.card h2{font-size:1.08rem;font-weight:700;margin:0;line-height:1.25}
+.pills{display:flex;flex-wrap:wrap;gap:.35rem;margin-top:.35rem}
+.pill{font-size:.75rem;font-weight:500;color:var(--accent);background:var(--pill);padding:.15rem .55rem;border-radius:99px}
+.pill.err{color:#d0456a;background:rgba(208,69,106,.1)}
+.desc{margin:0;color:var(--muted);font-size:.93rem;flex:1}
+.dl{
+  display:flex;align-items:center;justify-content:center;gap:.5rem;
+  background:var(--ink);color:var(--bg);text-decoration:none;font-weight:700;font-size:.95rem;
+  padding:.75rem 1rem;border-radius:.9rem;transition:transform .15s ease,opacity .15s ease;
+}
+.dl:hover{transform:translateY(-1px)}
+.dl:active{transform:translateY(0)}
+.dl[aria-disabled="true"]{opacity:.35;pointer-events:none}
+.dl svg{width:1.05rem;height:1.05rem}
+.dl:focus-visible,summary:focus-visible{outline:3px solid var(--accent);outline-offset:3px}
+details{font-size:.88rem}
+summary{cursor:pointer;color:var(--muted);list-style:none;user-select:none}
+summary::-webkit-details-marker{display:none}
+summary::after{content:" ▾";font-size:.75em}
+details[open] summary::after{content:" ▴"}
+details pre{
+  white-space:pre-wrap;word-break:break-word;font:inherit;margin:.6rem 0 0;
+  padding:.8rem .9rem;border-radius:.8rem;background:var(--pill);max-height:14rem;overflow:auto;
+}
+footer{margin-top:2.5rem;text-align:center;color:var(--muted);font-size:.85rem}
+footer a{color:var(--accent);text-decoration:none;font-weight:700}
+@media (prefers-reduced-motion:reduce){.dl{transition:none}.dl:hover{transform:none}}
+</style>
+</head>
+<body>
+<main>
+  <header>
+    <div class="logo" aria-hidden="true">🌙</div>
+    <div>
+      <h1>Nyxigo</h1>
+      <p>Mes apps Android</p>
+    </div>
+  </header>
+
+  <ul class="grid" id="apps"></ul>
+
+  <footer>Mises à jour auto avec <a href="https://github.com/ImranR98/Obtainium">Obtainium</a> · autorise les sources inconnues pour installer</footer>
+</main>
+
+<script>
+// ====== CONFIG : un objet par app ======
+// repo  : "utilisateur/repo" (public)
+// name  : nom affiché (optionnel)
+// desc  : description courte (optionnel)
+// icon  : URL d'une image d'icône (optionnel, sinon lettre sur dégradé)
+const APPS = [
+  { repo: "Fureko/Streamplayer", name: "StreamPlayer", desc: "Lecteur IPTV, portage Android d'IPTVnator." },
+  // { repo: "Fureko/autre-projet", name: "Autre", desc: "...", icon: "https://raw.githubusercontent.com/Fureko/autre-projet/main/icon.png" },
+];
+
+const CACHE_MIN = 10;
+const list = document.getElementById("apps");
+const DL_SVG = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 4v11m0 0l-4.5-4.5M12 15l4.5-4.5M5 20h14"/></svg>';
+
+function el(tag, attrs = {}, text) {
+  const e = document.createElement(tag);
+  for (const [k, v] of Object.entries(attrs)) e.setAttribute(k, v);
+  if (text != null) e.textContent = text;
+  return e;
+}
+function hue(str){ let h=0; for (const c of str) h=(h*31+c.charCodeAt(0))%360; return h; }
+function fmtSize(b){ return b > 1048576 ? (b/1048576).toFixed(1)+" Mo" : Math.round(b/1024)+" Ko"; }
+function fmtDate(s){ return new Date(s).toLocaleDateString("fr-FR",{day:"numeric",month:"short",year:"numeric"}); }
+
+async function getRelease(repo) {
+  const key = "rel:" + repo;
+  try {
+    const c = JSON.parse(sessionStorage.getItem(key) || "null");
+    if (c && Date.now() - c.t < CACHE_MIN * 60000) return c.d;
+  } catch {}
+  const r = await fetch(`https://api.github.com/repos/${repo}/releases/latest`, { headers: { Accept: "application/vnd.github+json" } });
+  if (r.status === 404) throw new Error("Pas encore de release");
+  if (r.status === 403) throw new Error("Limite GitHub, réessaie plus tard");
+  if (!r.ok) throw new Error("Erreur " + r.status);
+  const d = await r.json();
+  try { sessionStorage.setItem(key, JSON.stringify({ t: Date.now(), d })); } catch {}
+  return d;
+}
+
+function render(app) {
+  const name = app.name || app.repo.split("/")[1];
+  const h = hue(name);
+  const li = el("li", { class: "card" });
+
+  const top = el("div", { class: "top" });
+  const icon = el("div", { class: "icon", "aria-hidden": "true" });
+  icon.style.background = `linear-gradient(135deg,hsl(${h} 75% 62%),hsl(${(h+40)%360} 70% 48%))`;
+  icon.style.setProperty("--shadow", `hsl(${h} 70% 45% / .5)`);
+  if (app.icon) icon.append(el("img", { src: app.icon, alt: "" }));
+  else icon.textContent = name[0].toUpperCase();
+
+  const info = el("div");
+  const pills = el("div", { class: "pills" });
+  const status = el("span", { class: "pill" }, "Chargement…");
+  pills.append(status);
+  info.append(el("h2", {}, name), pills);
+  top.append(icon, info);
+  li.append(top);
+
+  if (app.desc) li.append(el("p", { class: "desc" }, app.desc));
+  else li.append(el("div", { class: "desc" }));
+
+  const btn = el("a", { class: "dl", href: "#", "aria-disabled": "true" });
+  btn.innerHTML = DL_SVG + "<span>Télécharger</span>";
+  li.append(btn);
+  list.append(li);
+
+  getRelease(app.repo).then(rel => {
+    const apk = (rel.assets || []).find(a => a.name.toLowerCase().endsWith(".apk"));
+    status.textContent = rel.tag_name || rel.name || "Release";
+    pills.append(el("span", { class: "pill" }, fmtDate(rel.published_at)));
+    if (!apk) { pills.append(el("span", { class: "pill err" }, "Pas d'APK")); return; }
+    pills.append(el("span", { class: "pill" }, fmtSize(apk.size)));
+    btn.href = apk.browser_download_url;
+    btn.removeAttribute("aria-disabled");
+    btn.setAttribute("download", "");
+    if (rel.body && rel.body.trim()) {
+      const det = el("details");
+      det.append(el("summary", {}, "Nouveautés"), el("pre", {}, rel.body.trim()));
+      li.append(det);
+    }
+  }).catch(e => {
+    status.textContent = e.message;
+    status.classList.add("err");
+  });
+}
+
+APPS.forEach(render);
+</script>
+</body>
+</html>
