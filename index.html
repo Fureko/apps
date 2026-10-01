@@ -110,14 +110,18 @@ footer a{color:var(--accent);text-decoration:none;font-weight:700}
 </main>
 
 <script>
-// ====== CONFIG : un objet par app ======
-// repo  : "utilisateur/repo" (public)
-// name  : nom affiché (optionnel)
+// ====== CONFIG ======
+// Toutes les APK sont dans les Releases d'UN seul repo.
+// Tag de chaque release : "<id>-<version>", ex : "streamplayer-v1.0.0"
+const REPO = "Fureko/apps";
+
+// id    : préfixe du tag (en minuscules, sans espace)
+// name  : nom affiché
 // desc  : description courte (optionnel)
-// icon  : URL d'une image d'icône (optionnel, sinon lettre sur dégradé)
+// icon  : URL d'une image d'icône (optionnel)
 const APPS = [
-  { repo: "Fureko/Streamplayer", name: "StreamPlayer", desc: "Lecteur IPTV, portage Android d'IPTVnator." },
-  // { repo: "Fureko/autre-projet", name: "Autre", desc: "...", icon: "https://raw.githubusercontent.com/Fureko/autre-projet/main/icon.png" },
+  { id: "streamplayer", name: "StreamPlayer", desc: "Lecteur IPTV, portage Android d'IPTVnator." },
+  // { id: "autre", name: "Autre app", desc: "..." },
 ];
 
 const CACHE_MIN = 10;
@@ -134,23 +138,41 @@ function hue(str){ let h=0; for (const c of str) h=(h*31+c.charCodeAt(0))%360; r
 function fmtSize(b){ return b > 1048576 ? (b/1048576).toFixed(1)+" Mo" : Math.round(b/1024)+" Ko"; }
 function fmtDate(s){ return new Date(s).toLocaleDateString("fr-FR",{day:"numeric",month:"short",year:"numeric"}); }
 
-async function getRelease(repo) {
-  const key = "rel:" + repo;
-  try {
-    const c = JSON.parse(sessionStorage.getItem(key) || "null");
-    if (c && Date.now() - c.t < CACHE_MIN * 60000) return c.d;
-  } catch {}
-  const r = await fetch(`https://api.github.com/repos/${repo}/releases/latest`, { headers: { Accept: "application/vnd.github+json" } });
-  if (r.status === 404) throw new Error("Pas encore de release");
-  if (r.status === 403) throw new Error("Limite GitHub, réessaie plus tard");
-  if (!r.ok) throw new Error("Erreur " + r.status);
-  const d = await r.json();
-  try { sessionStorage.setItem(key, JSON.stringify({ t: Date.now(), d })); } catch {}
-  return d;
+// Une seule requête pour toutes les apps
+let releasesPromise;
+function getReleases() {
+  if (releasesPromise) return releasesPromise;
+  releasesPromise = (async () => {
+    const key = "rels:" + REPO;
+    try {
+      const c = JSON.parse(sessionStorage.getItem(key) || "null");
+      if (c && Date.now() - c.t < CACHE_MIN * 60000) return c.d;
+    } catch {}
+    const r = await fetch(`https://api.github.com/repos/${REPO}/releases?per_page=100`, { headers: { Accept: "application/vnd.github+json" } });
+    if (r.status === 404) throw new Error("Repo introuvable");
+    if (r.status === 403) throw new Error("Limite GitHub, réessaie plus tard");
+    if (!r.ok) throw new Error("Erreur " + r.status);
+    const all = await r.json();
+    const d = all.filter(x => !x.draft && !x.prerelease)
+      .map(x => ({ tag_name: x.tag_name, name: x.name, body: x.body, published_at: x.published_at,
+                   assets: (x.assets||[]).map(a => ({ name: a.name, size: a.size, browser_download_url: a.browser_download_url })) }));
+    try { sessionStorage.setItem(key, JSON.stringify({ t: Date.now(), d })); } catch {}
+    return d;
+  })();
+  return releasesPromise;
+}
+
+async function getRelease(id) {
+  const prefix = id.toLowerCase() + "-";
+  const rel = (await getReleases())
+    .filter(x => x.tag_name.toLowerCase().startsWith(prefix))
+    .sort((a, b) => new Date(b.published_at) - new Date(a.published_at))[0];
+  if (!rel) throw new Error("Pas encore de release");
+  return { ...rel, version: rel.tag_name.slice(prefix.length) };
 }
 
 function render(app) {
-  const name = app.name || app.repo.split("/")[1];
+  const name = app.name || app.id;
   const h = hue(name);
   const li = el("li", { class: "card" });
 
@@ -177,9 +199,9 @@ function render(app) {
   li.append(btn);
   list.append(li);
 
-  getRelease(app.repo).then(rel => {
+  getRelease(app.id).then(rel => {
     const apk = (rel.assets || []).find(a => a.name.toLowerCase().endsWith(".apk"));
-    status.textContent = rel.tag_name || rel.name || "Release";
+    status.textContent = rel.version || "Release";
     pills.append(el("span", { class: "pill" }, fmtDate(rel.published_at)));
     if (!apk) { pills.append(el("span", { class: "pill err" }, "Pas d'APK")); return; }
     pills.append(el("span", { class: "pill" }, fmtSize(apk.size)));
