@@ -111,20 +111,18 @@ footer a{color:var(--accent);text-decoration:none;font-weight:700}
 
 <script>
 // ====== CONFIG ======
-// Toutes les APK sont dans les Releases d'UN seul repo.
-// Tag de chaque release : "<id>-<version>", ex : "streamplayer-v1.0.0"
+// Dépose tes APK dans le dossier apks/ du repo. Une carte = un nom d'app.
+// Nom de fichier : "NomApp.apk" ou "NomApp-v1.2.0.apk" (la version est affichée)
 const REPO = "Fureko/apps";
+const FOLDER = "apks";
 
-// id    : préfixe du tag (en minuscules, sans espace)
-// name  : nom affiché
-// desc  : description courte (optionnel)
-// icon  : URL d'une image d'icône (optionnel)
-const APPS = [
-  { id: "streamplayer", name: "StreamPlayer", desc: "Lecteur IPTV, portage Android d'IPTVnator." },
-  // { id: "autre", name: "Autre app", desc: "..." },
-];
+// Optionnel : description / icône par app (clé = nom avant la version)
+const INFO = {
+  "StreamPlayer": { desc: "Lecteur IPTV, portage Android d'IPTVnator." },
+  // "Planning": { desc: "...", icon: "icons/planning.png" },
+};
 
-const CACHE_MIN = 10;
+const CACHE_MIN = 5;
 const list = document.getElementById("apps");
 const DL_SVG = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 4v11m0 0l-4.5-4.5M12 15l4.5-4.5M5 20h14"/></svg>';
 
@@ -136,90 +134,79 @@ function el(tag, attrs = {}, text) {
 }
 function hue(str){ let h=0; for (const c of str) h=(h*31+c.charCodeAt(0))%360; return h; }
 function fmtSize(b){ return b > 1048576 ? (b/1048576).toFixed(1)+" Mo" : Math.round(b/1024)+" Ko"; }
-function fmtDate(s){ return new Date(s).toLocaleDateString("fr-FR",{day:"numeric",month:"short",year:"numeric"}); }
 
-// Une seule requête pour toutes les apps
-let releasesPromise;
-function getReleases() {
-  if (releasesPromise) return releasesPromise;
-  releasesPromise = (async () => {
-    const key = "rels:" + REPO;
-    try {
-      const c = JSON.parse(sessionStorage.getItem(key) || "null");
-      if (c && Date.now() - c.t < CACHE_MIN * 60000) return c.d;
-    } catch {}
-    const r = await fetch(`https://api.github.com/repos/${REPO}/releases?per_page=100`, { headers: { Accept: "application/vnd.github+json" } });
-    if (r.status === 404) throw new Error("Repo introuvable");
-    if (r.status === 403) throw new Error("Limite GitHub, réessaie plus tard");
-    if (!r.ok) throw new Error("Erreur " + r.status);
-    const all = await r.json();
-    const d = all.filter(x => !x.draft && !x.prerelease)
-      .map(x => ({ tag_name: x.tag_name, name: x.name, body: x.body, published_at: x.published_at,
-                   assets: (x.assets||[]).map(a => ({ name: a.name, size: a.size, browser_download_url: a.browser_download_url })) }));
-    try { sessionStorage.setItem(key, JSON.stringify({ t: Date.now(), d })); } catch {}
-    return d;
-  })();
-  return releasesPromise;
+async function listApks() {
+  const key = "apks:" + REPO + "/" + FOLDER;
+  try {
+    const c = JSON.parse(sessionStorage.getItem(key) || "null");
+    if (c && Date.now() - c.t < CACHE_MIN * 60000) return c.d;
+  } catch {}
+  const r = await fetch(`https://api.github.com/repos/${REPO}/contents/${FOLDER}`, { headers: { Accept: "application/vnd.github+json" } });
+  if (r.status === 404) throw new Error(`Dossier "${FOLDER}" introuvable dans ${REPO}.`);
+  if (r.status === 403) throw new Error("Limite GitHub atteinte, réessaie dans un moment.");
+  if (!r.ok) throw new Error("Erreur GitHub " + r.status + ".");
+  const d = (await r.json())
+    .filter(f => f.type === "file" && f.name.toLowerCase().endsWith(".apk"))
+    .map(f => ({ name: f.name, size: f.size, path: f.path }));
+  try { sessionStorage.setItem(key, JSON.stringify({ t: Date.now(), d })); } catch {}
+  return d;
 }
 
-async function getRelease(id) {
-  const prefix = id.toLowerCase() + "-";
-  const rel = (await getReleases())
-    .filter(x => x.tag_name.toLowerCase().startsWith(prefix))
-    .sort((a, b) => new Date(b.published_at) - new Date(a.published_at))[0];
-  if (!rel) throw new Error("Pas encore de release");
-  return { ...rel, version: rel.tag_name.slice(prefix.length) };
+// "StreamPlayer-v1.2.0.apk" -> { app: "StreamPlayer", version: "v1.2.0" }
+function parse(file) {
+  const base = file.replace(/\.apk$/i, "");
+  const m = base.match(/^(.*?)[-_ ]v?(\d+(?:\.\d+)*.*)$/i);
+  return m ? { app: m[1], version: "v" + m[2].replace(/^v/i, "") } : { app: base, version: "" };
 }
 
-function render(app) {
-  const name = app.name || app.id;
-  const h = hue(name);
+function render(app, file, version) {
+  const info = INFO[app] || {};
+  const h = hue(app);
   const li = el("li", { class: "card" });
 
   const top = el("div", { class: "top" });
   const icon = el("div", { class: "icon", "aria-hidden": "true" });
   icon.style.background = `linear-gradient(135deg,hsl(${h} 75% 62%),hsl(${(h+40)%360} 70% 48%))`;
   icon.style.setProperty("--shadow", `hsl(${h} 70% 45% / .5)`);
-  if (app.icon) icon.append(el("img", { src: app.icon, alt: "" }));
-  else icon.textContent = name[0].toUpperCase();
+  if (info.icon) icon.append(el("img", { src: info.icon, alt: "" }));
+  else icon.textContent = app[0].toUpperCase();
 
-  const info = el("div");
+  const meta = el("div");
   const pills = el("div", { class: "pills" });
-  const status = el("span", { class: "pill" }, "Chargement…");
-  pills.append(status);
-  info.append(el("h2", {}, name), pills);
-  top.append(icon, info);
+  if (version) pills.append(el("span", { class: "pill" }, version));
+  pills.append(el("span", { class: "pill" }, fmtSize(file.size)));
+  meta.append(el("h2", {}, app), pills);
+  top.append(icon, meta);
   li.append(top);
 
-  if (app.desc) li.append(el("p", { class: "desc" }, app.desc));
-  else li.append(el("div", { class: "desc" }));
+  li.append(info.desc ? el("p", { class: "desc" }, info.desc) : el("div", { class: "desc" }));
 
-  const btn = el("a", { class: "dl", href: "#", "aria-disabled": "true" });
+  // Lien relatif : le fichier est servi par GitHub Pages, comme la page
+  const btn = el("a", { class: "dl", href: file.path.split("/").map(encodeURIComponent).join("/"), download: file.name });
   btn.innerHTML = DL_SVG + "<span>Télécharger</span>";
   li.append(btn);
   list.append(li);
-
-  getRelease(app.id).then(rel => {
-    const apk = (rel.assets || []).find(a => a.name.toLowerCase().endsWith(".apk"));
-    status.textContent = rel.version || "Release";
-    pills.append(el("span", { class: "pill" }, fmtDate(rel.published_at)));
-    if (!apk) { pills.append(el("span", { class: "pill err" }, "Pas d'APK")); return; }
-    pills.append(el("span", { class: "pill" }, fmtSize(apk.size)));
-    btn.href = apk.browser_download_url;
-    btn.removeAttribute("aria-disabled");
-    btn.setAttribute("download", "");
-    if (rel.body && rel.body.trim()) {
-      const det = el("details");
-      det.append(el("summary", {}, "Nouveautés"), el("pre", {}, rel.body.trim()));
-      li.append(det);
-    }
-  }).catch(e => {
-    status.textContent = e.message;
-    status.classList.add("err");
-  });
 }
 
-APPS.forEach(render);
+listApks().then(files => {
+  if (!files.length) {
+    list.append(el("li", { class: "card" }, `Aucune APK dans le dossier ${FOLDER}/ pour l'instant.`));
+    return;
+  }
+  // Si plusieurs versions d'une même app : on garde la plus haute
+  const byApp = {};
+  for (const f of files) {
+    const { app, version } = parse(f.name);
+    const cur = byApp[app];
+    if (!cur || version.localeCompare(cur.version, undefined, { numeric: true }) > 0) byApp[app] = { file: f, version };
+  }
+  Object.keys(byApp).sort((a, b) => a.localeCompare(b, "fr"))
+    .forEach(app => render(app, byApp[app].file, byApp[app].version));
+}).catch(e => {
+  const li = el("li", { class: "card" });
+  li.append(el("span", { class: "pill err" }, e.message));
+  list.append(li);
+});
 </script>
 </body>
 </html>
